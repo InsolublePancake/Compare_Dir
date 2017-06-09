@@ -94,7 +94,10 @@ def compareInternal(dirList):
         subSet = set()
         for s in subList: 
             subSet = subSet | s
-        print(nameList[n], '\nDoes either not include the following, or filesizes differ:\n', [tup[0] for tup in subSet-i], '\n')
+                
+        print('~~ {} ~~'.format(nameList[n]), 
+        '\nDoes either not include the following, or filesizes differ:\n', 
+        [tup[0] for tup in subSet-i], '\n')
 
    
 
