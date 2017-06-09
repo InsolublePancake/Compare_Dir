@@ -91,21 +91,66 @@ def compareInternal(dirList):
     # For each directory (set) in compList:
     for n, i in enumerate(compList):
         subList = compList[:n] + compList[n+1:]
+        #Create subSet: all values from every list in compList except for compList[n]
         subSet = set()
         for s in subList: 
             subSet = subSet | s
-                
+        not_n = [tup[0] for tup in subSet-i]
+
+        for item in not_n:
+
         print('~~ {} ~~'.format(nameList[n]), 
         '\nDoes either not include the following, or filesizes differ:\n', 
-        [tup[0] for tup in subSet-i], '\n')
+        not_n, '\n')
 
    
+
+def compareDirs(dirList):
+    # dirNameList is a list of dictionaries. Each dictionary corresponds to folder name
+    # and each key is the path for the folder. So, a uniquely named folder will be
+    # in a dictionary with a single key (the path to the folder). 
+    # Where multiple folders have the same name the corresponding dictionary will 
+    # have multiple keys.
+
+    for dname in dirList:
+        excludeList = ['Thumbs.db'] #Files to ignore in comparisons
+        # creates a set of the number of files in each duplicate directory. 
+        #s = {len(dname[dupe]) for dupe in dname.keys()} 
+    
+        compList = [] # list
+        nameList = []
+        for dupe in dname.keys():
+            compList.append({d for d in dname[dupe] if d[0] not in excludeList})
+            nameList.append(dupe)
+
+    # Compare directories with Set comparisons
+    # For each directory (set) in compList:
+        if len(compList) > 1:
+            print('There are {} folders with the name [{}]\n'.format(len(compList), dupe.split('\\')[-1]))
+            for n, i in enumerate(compList):
+                subList = compList[:n] + compList[n+1:]
+                subSet = set()
+                for s in subList: 
+                    subSet = subSet | s
+                filelist = [tup[0] for tup in subSet-i]
+                if filelist:
+                    print(nameList[n], '\nDoes either not include the following, or filesizes differ:\n', filelist, '\n')
+                else:
+                    print(nameList[n], '\n[This directory includes all of the files found in other versions of the directory]\n')
+            print(40*'-', '\n')
+        else: pass
+    
+compareDirs(dirNameList)    
+
+
 
 
 
 
 
 path = r"N:\user\lumbric\python\Pixel"
+#path = r"N:/user/lumbric/python/Pixel"
+#path = os.path.realpath(path)
 dirTree = getFileTree(path)
 dirSizes(dirTree)
 dirNameList = createDirNameList(dirTree)
