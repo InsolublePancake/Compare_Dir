@@ -2,15 +2,16 @@ import os
 
 def getFileTree(rootDir):
     Tree = {}
+
     for dirPath, subdirList, fileList in os.walk(rootDir):
-        if dirPath.endswith('.ipynb_checkpoints'): continue
+        if dirPath.endswith('ipynb_checkpoints'): continue
         else: pass
         #print(dirName)
-        dirName = dirPath.split('\\')[-1].lower()
+        dirName = dirPath.split(os.sep)[-1].lower()
         Tree.setdefault(dirName, [])
         Tree[dirName].append({dirPath : [{'path': os.path.join(dirPath, file),
                                           'size': os.stat(os.path.join(dirPath, file))[6],
-                                          'filetype': file.split('.')[-1]} for file in fileList]})
+                                          'filetype': file.split(os.extsep)[-1]} for file in fileList]})
     return Tree
 
 
@@ -144,17 +145,11 @@ compareDirs(dirNameList)
 
 
 
-
-
-
-
 path = r"N:\user\lumbric\python\Pixel"
-#path = r"N:/user/lumbric/python/Pixel"
-#path = os.path.realpath(path)
 dirTree = getFileTree(path)
+
 dirSizes(dirTree)
 dirNameList = createDirNameList(dirTree)
-
 compareInternal(dirNameList)
 
 
