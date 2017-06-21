@@ -17,7 +17,7 @@ def getFileTree(rootDir):
 
 def dirSizes(Tree):
     #Get size of each duplicate directory
-    print('\n\nBytes\tFolder')
+    #print('\n\nBytes\tFolder')
     for directory in Tree.keys():
         for dupeDir in Tree[directory]:
             for fol in dupeDir.keys():
@@ -25,8 +25,8 @@ def dirSizes(Tree):
                 for file in dupeDir[fol]:
                     #print(file['size'], '\t', file['path'])
                     total += file['size']
-                print(total, '\t', fol)
-        print()
+                #print(total, '\t', fol)
+        #print()
 
 
 #Get list of files for each duplicate directory
@@ -34,6 +34,8 @@ def dirSizes(Tree):
 # and each dictionary in the form: {folderpath: [list of filenames]}
 
 def createDirNameList(Tree):
+    excludeFiles = ['Thumbs.db']
+    excludeExt = ['ipynb']
     dirList = []
     for directory in Tree.keys():
         dic = {}
@@ -41,14 +43,19 @@ def createDirNameList(Tree):
             #dic[dupDir] = []
             #print(dupeDir)
             for fol in dupeDir.keys():
-                print(fol)
-                dic[fol] = []
+                #print(fol)
+                dic[fol] = {}
                 for file in dupeDir[fol]:
+                    #if file not in excludeFiles and file.split('.')[-1] not in excludeExt:
                     #Appends a tuple of file (name, size) to dirNameList
                     #At this point it could be useful to split the file extension off
                     fileNm = file['path'].split('\\')[-1]
                     fileSz = file['size']
-                    dic[fol].append((fileNm, fileSz))
+                    #dic[fol].append((fileNm, fileSz))
+                    if fileNm not in excludeFiles and fileNm.split('.')[-1] not in excludeExt:
+                        dic[fol][fileNm] = fileSz
+                    else: pass
+
                     #print(file['size'], '\t', file['path'])
                     #total += file['size']
         dirList.append(dic)
@@ -68,93 +75,110 @@ def createDirNameList(Tree):
 
 
 
-def compareInternal(dirList):
-    """ dirNameList is a list of dictionaries. Each dictionary corresponds to folder name
-        and each key is the path for the folder. So, a uniquely named folder will be
-        in a dictionary with a single key (the path to the folder). 
-        Where multiple folders have the same name the corresponding dictionary will 
-        have multiple keys."""
-
-    for dname in dirList:
-        excludeList = ['Thumbs.db'] #Files to ignore in comparisons
-
-        # creates a set of the number of files in each duplicate directory. 
-        s = {len(dname[dupe]) for dupe in dname.keys()} 
-        # if s==1  all the folders have the same number of files (note the files may be different)
-        if len(s) > 1:
-            compList = [] # list
-            nameList = []
-            for dupe in dname.keys():
-                compList.append({d for d in dname[dupe] if d[0] not in excludeList})
-                nameList.append(dupe)
-
-    # Compare directories with Set comparisons
-    # For each directory (set) in compList:
-    for n, i in enumerate(compList):
-        subList = compList[:n] + compList[n+1:]
-        #Create subSet: all values from every list in compList except for compList[n]
-        subSet = set()
-        for s in subList: 
-            subSet = subSet | s
-        not_n = [tup[0] for tup in subSet-i]
-
-        for item in not_n:
-
-        print('~~ {} ~~'.format(nameList[n]), 
-        '\nDoes either not include the following, or filesizes differ:\n', 
-        not_n, '\n')
-
-   
-
-def compareDirs(dirList):
-    # dirNameList is a list of dictionaries. Each dictionary corresponds to folder name
-    # and each key is the path for the folder. So, a uniquely named folder will be
-    # in a dictionary with a single key (the path to the folder). 
-    # Where multiple folders have the same name the corresponding dictionary will 
-    # have multiple keys.
-
-    for dname in dirList:
-        excludeList = ['Thumbs.db'] #Files to ignore in comparisons
-        # creates a set of the number of files in each duplicate directory. 
-        #s = {len(dname[dupe]) for dupe in dname.keys()} 
-    
-        compList = [] # list
-        nameList = []
-        for dupe in dname.keys():
-            compList.append({d for d in dname[dupe] if d[0] not in excludeList})
-            nameList.append(dupe)
-
-    # Compare directories with Set comparisons
-    # For each directory (set) in compList:
-        if len(compList) > 1:
-            print('There are {} folders with the name [{}]\n'.format(len(compList), dupe.split('\\')[-1]))
-            for n, i in enumerate(compList):
-                subList = compList[:n] + compList[n+1:]
-                subSet = set()
-                for s in subList: 
-                    subSet = subSet | s
-                filelist = [tup[0] for tup in subSet-i]
-                if filelist:
-                    print(nameList[n], '\nDoes either not include the following, or filesizes differ:\n', filelist, '\n')
-                else:
-                    print(nameList[n], '\n[This directory includes all of the files found in other versions of the directory]\n')
-            print(40*'-', '\n')
-        else: pass
-    
-compareDirs(dirNameList)    
-
-
 
 path = r"N:\user\lumbric\python\Pixel"
 dirTree = getFileTree(path)
 
 dirSizes(dirTree)
 dirNameList = createDirNameList(dirTree)
-compareInternal(dirNameList)
 
 
 
 
+
+
+def compareDirs(dirList):
+    #for every dirName
+    #    for every duplicate dir name
+    #        check the other duplicate dirs for the same filename, 
+    #        and test whether it is the same size
+    
+    #for each unique directory name in the main list
+    for drN, dirName in enumerate(dirList):
+        allList =[]
+        for dr in dirName:
+            allList += [k for k in dirList[drN][dr].keys()]
+        allSet = set(allList) #Set of all files from all duplicate directories
+        
+        missDict = {}
+        missDict2 = {}
+        sizeDict = {}
+        
+        if len(dirName.keys()) > 1:
+            name = list(dirName.keys())[0].split(os.path.sep)[-1].upper()
+            print('\nDuplicate directories found for: ', name, '\nComparing contents...\n') 
+        
+        #for each version of this directory
+        for dpN, dupDir in enumerate(dirName):
+            #Check that there are duplicate directories
+            if len(dirName) == 1: continue
+            else:
+                #for every duplicate directory
+                # list of filenames --> dirList[drN][dupDir].keys()
+                # Directory path --> dupDir
+                for f in allSet:
+                    if f not in dirList[drN][dupDir].keys():
+                        missDict.setdefault(f, [])
+                        if dupDir not in missDict[f]:
+                            missDict[f].append(dupDir)
+                        else:pass
+                    else:pass
+                
+                for fi in allSet:
+                    if fi not in dirList[drN][dupDir].keys():
+                        missDict2.setdefault(dupDir, [])
+                        missDict2[dupDir].append(fi)
+                        
+                #for each file in directory
+                for fl in dirList[drN][dupDir].items():
+                    fn = fl[0]
+                    fs = fl[1]
+                    fpath = dupDir
+                    sizeDict.setdefault(fn, ([],[]))
+                    
+                    if dupDir not in sizeDict[fn][1]:
+                        sizeDict[fn][0].append(fl[1])
+                        sizeDict[fn][1].append(fpath)                     
+                
+                dname = dupDir.split(os.path.sep)[-1]
+
+        sizeDict = {k: v for k, v in sizeDict.items() if len(set(v[0])) > 1 }
+
+        if sizeDict or missDict: 
+            print('Duplicate directories are not identical:\n'.format(dname.upper()))
+        else:
+            print('Duplicate directories contain the same files at the same size')
+            
+        if sizeDict:
+            print('There are differently sized versions of one or more files:')
+            for k, v in sizeDict.items():
+                print(k)
+                for n in range(len(v[0])):
+                    print('\t\t', v[0][n], '\t', v[1][n])
+            print()
+
+        #if missDict:
+        #    print('The following files are missing from some directories:')
+        #    for k, v in missDict.items():
+        #        if v:
+        #            print(k)
+        #            for path in v:
+        #                print('\t\t', path)
+        #    print()
+        
+        if missDict2:
+            for d in dirList[drN].keys():
+                if d not in missDict2.keys():
+                    print('{} has no missing files'.format(d))
+            print('The following directories are missing files:')
+            for k, v in missDict2.items():
+                print('\t', k)
+                for vs in v: print('\t\t', vs)
+            print()
+        
+        print(40*'-')
+                
+compareDirs(dirNameList)   
 
 
 
